@@ -1,4 +1,3 @@
-
 version: '3.8'
 
 services:
@@ -55,15 +54,17 @@ services:
     env_file:
       - .env
     labels:
+labels:
       - "traefik.enable=true"
-      # Rule 2: Match traffic for /api/auth path
-      - "traefik.http.routers.auth-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/auth`)" # CHANGE THIS
+      # 1. The Router (Matches the public URL)
+      - "traefik.http.routers.auth-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/auth`)"
       - "traefik.http.routers.auth-api.entrypoints=websecure"
       - "traefik.http.routers.auth-api.tls.certresolver=letsencrypt"
-# 2. Define the Middleware (Strip the prefix)
+      # 2. The Middleware Definition (Define a stripper named 'auth-strip')
       - "traefik.http.middlewares.auth-strip.stripprefix.prefixes=/api/auth"
-# 3. Attach the Middleware to the Router (Crucial!)
+      # 3. The Middleware Attachment (Tell the router to USE 'auth-strip')
       - "traefik.http.routers.auth-api.middlewares=auth-strip"
+      # 4. The Service Port
       - "traefik.http.services.auth-api.loadbalancer.server.port=8081"
 
   # 4. Todos API (Node.js)
@@ -75,12 +76,12 @@ services:
       - .env
     labels:
       - "traefik.enable=true"
-      # Rule 3: Match traffic for /api/todos path
-      - "traefik.http.routers.todos-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/todos`)" # CHANGE THIS
+      - "traefik.http.routers.todos-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/todos`)"
       - "traefik.http.routers.todos-api.entrypoints=websecure"
       - "traefik.http.routers.todos-api.tls.certresolver=letsencrypt"
-# Middleware to strip /api/todos
+      # Middleware Definition ('todos-strip')
       - "traefik.http.middlewares.todos-strip.stripprefix.prefixes=/api/todos"
+      # Middleware Attachment
       - "traefik.http.routers.todos-api.middlewares=todos-strip"
       - "traefik.http.services.todos-api.loadbalancer.server.port=8082"
 
@@ -96,10 +97,12 @@ services:
       - "traefik.http.routers.users-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/users`)"
       - "traefik.http.routers.users-api.entrypoints=websecure"
       - "traefik.http.routers.users-api.tls.certresolver=letsencrypt"
-  # Middleware to strip /api/users
+      # Middleware Definition ('users-strip')
       - "traefik.http.middlewares.users-strip.stripprefix.prefixes=/api/users"
+      # Middleware Attachment
       - "traefik.http.routers.users-api.middlewares=users-strip"
       - "traefik.http.services.users-api.loadbalancer.server.port=8083"
+
   # 6. Redis Queue
   redis-queue:
     image: redis:alpine
