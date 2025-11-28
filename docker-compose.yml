@@ -23,8 +23,8 @@ services:
       - "80:80"
       - "443:443"
       # (8080 dashboard port is commented out for security)
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+volumes:
+      - /  var/run/docker.sock:/var/run/docker.sock:ro
       - traefik-certificates:/etc/traefik
 
   # 2. Frontend (Vue.js) - Serves the web assets
@@ -54,11 +54,9 @@ services:
       - "traefik.http.routers.auth-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/auth`)"
       - "traefik.http.routers.auth-api.entrypoints=websecure"
       - "traefik.http.routers.auth-api.tls.certresolver=letsencrypt"
-      
       # CRITICAL STRIP PREFIX MIDDLEWARE
       - "traefik.http.middlewares.auth-strip.stripprefix.prefixes=/api/auth"
       - "traefik.http.routers.auth-api.middlewares=auth-strip" # Attachment
-      
       - "traefik.http.services.auth-api.loadbalancer.server.port=8081"
 
   # 4. Todos API (Node.js) - Handles /api/todos/* requests
@@ -73,11 +71,9 @@ services:
       - "traefik.http.routers.todos-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/todos`)"
       - "traefik.http.routers.todos-api.entrypoints=websecure"
       - "traefik.http.routers.todos-api.tls.certresolver=letsencrypt"
-      
       # CRITICAL STRIP PREFIX MIDDLEWARE
       - "traefik.http.middlewares.todos-strip.stripprefix.prefixes=/api/todos"
       - "traefik.http.routers.todos-api.middlewares=todos-strip"
-      
       - "traefik.http.services.todos-api.loadbalancer.server.port=8082"
 
   # 5. Users API (Java Spring Boot) - Handles /api/users/* requests
@@ -92,11 +88,9 @@ services:
       - "traefik.http.routers.users-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/users`)"
       - "traefik.http.routers.users-api.entrypoints=websecure"
       - "traefik.http.routers.users-api.tls.certresolver=letsencrypt"
-      
       # CRITICAL STRIP PREFIX MIDDLEWARE
       - "traefik.http.middlewares.users-strip.stripprefix.prefixes=/api/users"
       - "traefik.http.routers.users-api.middlewares=users-strip"
-      
       - "traefik.http.services.users-api.loadbalancer.server.port=8083"
 
   # 6. Redis Queue - Internal only
