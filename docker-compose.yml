@@ -1,3 +1,4 @@
+
 version: '3.8'
 
 services:
@@ -22,7 +23,7 @@ services:
       - --certificatesresolvers.letsencrypt.acme.email=muktarakinola.devops@gmail.com # CHANGE THIS
       - --certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json
       #- --certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory # REMOVE FOR PROD
-   ports:
+    ports:
       - "80:80"     # The Web entrypoint (redirects to 443)
       - "443:443"   # The WebSecure entrypoint
       #- "8080:8080" # Traefik Dashboard (optional)
