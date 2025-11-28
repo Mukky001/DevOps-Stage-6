@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # 1. Traefik Reverse Proxy & SSL Manager
   traefik:
-    image: traefik:v2.11 # Upgraded to fix Docker API compatibility
+    image: traefik:v2.11 # Fixes Docker API version compatibility
     container_name: traefik
     command:
       - --entrypoints.web.address=:80
@@ -15,16 +15,15 @@ services:
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
       # ACME configuration for Production SSL (Green Lock)
-      - --certificatesresolvers.letsencrypt.acme.tlsChallenge=true # CRITICAL: Added Challenge method
+      - --certificatesresolvers.letsencrypt.acme.tlsChallenge=true # CRITICAL: ACME challenge type
       - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
       - --certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json
-      # NOTE: The staging server line is commented out or deleted for production
+      # Staging caserver line is omitted/commented out here for production
     ports:
       - "80:80"
       - "443:443"
-      # (8080 dashboard port is commented out for security)
-volumes:
-      - /  var/run/docker.sock:/var/run/docker.sock:ro
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik-certificates:/etc/traefik
 
   # 2. Frontend (Vue.js) - Serves the web assets
@@ -36,11 +35,10 @@ volumes:
       - .env
     labels:
       - "traefik.enable=true"
-      # Host Rule (Uses variable, no https:// prefix)
       - "traefik.http.routers.frontend.rule=Host(`${DOMAIN_NAME}`)"
-      - "traefik.http.routers.frontend.entrypoints=websecure" # Plural fix
+      - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.frontend.loadbalancer.server.port=80" # Nginx serves on port 80
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
   # 3. Auth API (Go) - Handles /api/auth/* requests
   auth-api:
@@ -54,9 +52,11 @@ volumes:
       - "traefik.http.routers.auth-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/auth`)"
       - "traefik.http.routers.auth-api.entrypoints=websecure"
       - "traefik.http.routers.auth-api.tls.certresolver=letsencrypt"
-      # CRITICAL STRIP PREFIX MIDDLEWARE
+      
+      # CRITICAL STRIP PREFIX MIDDLEWARE (Strips /api/auth for container)
       - "traefik.http.middlewares.auth-strip.stripprefix.prefixes=/api/auth"
-      - "traefik.http.routers.auth-api.middlewares=auth-strip" # Attachment
+      - "traefik.http.routers.auth-api.middlewares=auth-strip"
+      
       - "traefik.http.services.auth-api.loadbalancer.server.port=8081"
 
   # 4. Todos API (Node.js) - Handles /api/todos/* requests
@@ -71,9 +71,11 @@ volumes:
       - "traefik.http.routers.todos-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/todos`)"
       - "traefik.http.routers.todos-api.entrypoints=websecure"
       - "traefik.http.routers.todos-api.tls.certresolver=letsencrypt"
+      
       # CRITICAL STRIP PREFIX MIDDLEWARE
       - "traefik.http.middlewares.todos-strip.stripprefix.prefixes=/api/todos"
       - "traefik.http.routers.todos-api.middlewares=todos-strip"
+      
       - "traefik.http.services.todos-api.loadbalancer.server.port=8082"
 
   # 5. Users API (Java Spring Boot) - Handles /api/users/* requests
@@ -88,15 +90,16 @@ volumes:
       - "traefik.http.routers.users-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/users`)"
       - "traefik.http.routers.users-api.entrypoints=websecure"
       - "traefik.http.routers.users-api.tls.certresolver=letsencrypt"
+      
       # CRITICAL STRIP PREFIX MIDDLEWARE
       - "traefik.http.middlewares.users-strip.stripprefix.prefixes=/api/users"
       - "traefik.http.routers.users-api.middlewares=users-strip"
+      
       - "traefik.http.services.users-api.loadbalancer.server.port=8083"
 
   # 6. Redis Queue - Internal only
   redis-queue:
     image: redis:alpine
-    # This port is exposed only to the Docker network internally
 
   # 7. Log Message Processor (Python) - Internal worker
   log-message-processor:
@@ -105,4 +108,7 @@ volumes:
       dockerfile: Dockerfile
     env_file:
       - .env
-    # No Traefik labels needed—this is a worker service.
+    # No Traefik labels needed
+
+volumes: # <--- CRITICAL: THIS MUST BE FLUSH LEFT (NO SPACES)
+  traefik-certificates:
