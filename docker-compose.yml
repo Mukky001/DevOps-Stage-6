@@ -18,13 +18,13 @@ services:
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
       # ACME configuration for SSL certificates (Let's Encrypt Staging for testing)
-      - --certificatesresolvers.letsencrypt.acme.email=your.email@example.com # CHANGE THIS
+      - --certificatesresolvers.letsencrypt.acme.email=muktarakinola.devops@gmail.com # CHANGE THIS
       - --certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json
       - --certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory # REMOVE FOR PROD
     ports:
       - "80:80"     # The Web entrypoint (redirects to 443)
       - "443:443"   # The WebSecure entrypoint
-      # - "8080:8080" # Traefik Dashboard (optional)
+      #- "8080:8080" # Traefik Dashboard (optional)
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik-certificates:/etc/traefik
@@ -41,7 +41,7 @@ services:
       - "traefik.enable=true"
       # Rule 1: Match traffic for the root domain (https://your-domain.com)
       - "traefik.http.routers.frontend.rule=Host(`${DOMAIN_NAME}`)" # CHANGE THIS
-      - "traefik.http.routers.frontend.entrypoint=websecure"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
       - "traefik.http.services.frontend.loadbalancer.server.port=80" # Nginx serves on port 80
 
@@ -56,7 +56,7 @@ services:
       - "traefik.enable=true"
       # Rule 2: Match traffic for /api/auth path
       - "traefik.http.routers.auth-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/auth`)" # CHANGE THIS
-      - "traefik.http.routers.auth-api.entrypoint=websecure"
+      - "traefik.http.routers.auth-api.entrypoints=websecure"
       - "traefik.http.routers.auth-api.tls.certresolver=letsencrypt"
       - "traefik.http.services.auth-api.loadbalancer.server.port=8081"
 
@@ -71,7 +71,7 @@ services:
       - "traefik.enable=true"
       # Rule 3: Match traffic for /api/todos path
       - "traefik.http.routers.todos-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/todos`)" # CHANGE THIS
-      - "traefik.http.routers.todos-api.entrypoint=websecure"
+      - "traefik.http.routers.todos-api.entrypoints=websecure"
       - "traefik.http.routers.todos-api.tls.certresolver=letsencrypt"
       - "traefik.http.services.todos-api.loadbalancer.server.port=8082"
 
@@ -87,7 +87,7 @@ services:
       # Rule 4: Match traffic for /api/users path
       - "traefik.http.routers.users-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/users`)" # CHANGE THIS
       - "traefik.http.routers.users-api.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.users-api.entrypoint=websecure"
+      - "traefik.http.routers.users-api.entrypoints=websecure"
       - "traefik.http.services.users-api.loadbalancer.server.port=8083"
 
   # 6. Redis Queue
