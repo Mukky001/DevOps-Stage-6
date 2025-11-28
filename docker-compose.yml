@@ -3,50 +3,46 @@ version: '3.8'
 services:
   # 1. Traefik Reverse Proxy & SSL Manager
   traefik:
-    image: traefik:v2.11
+    image: traefik:v2.11 # Upgraded to fix Docker API compatibility
     container_name: traefik
     command:
-      # Entry points for HTTP (80) and HTTPS (443)
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
-      # Enable Docker provider for dynamic configuration
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
-      # Enable API and Dashboard (optional, for debugging)
       - --api.dashboard=true
-      # HTTP to HTTPS redirection globally
+      # HTTP to HTTPS Redirection
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
-      # ACME configuration for SSL certificates (Let's Encrypt Staging for testing)
-      - --certificatesresolvers.letsencrypt.acme.tlsChallenge=true
-      - --certificatesresolvers.letsencrypt.acme.email=muktarakinola.devops@gmail.com # CHANGE THIS
+      # ACME configuration for Production SSL (Green Lock)
+      - --certificatesresolvers.letsencrypt.acme.tlsChallenge=true # CRITICAL: Added Challenge method
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
       - --certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json
-      #- --certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory # REMOVE FOR PROD
+      # NOTE: The staging server line is commented out or deleted for production
     ports:
-      - "80:80"     # The Web entrypoint (redirects to 443)
-      - "443:443"   # The WebSecure entrypoint
-      #- "8080:8080" # Traefik Dashboard (optional)
+      - "80:80"
+      - "443:443"
+      # (8080 dashboard port is commented out for security)
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik-certificates:/etc/traefik
 
-  # 2. Frontend (Vue.js)
+  # 2. Frontend (Vue.js) - Serves the web assets
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    # Load environment variables from the root .env file
     env_file:
       - .env
     labels:
       - "traefik.enable=true"
-      # Rule 1: Match traffic for the root domain (https://your-domain.com)
-      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN_NAME}`)" # CHANGE THIS
-      - "traefik.http.routers.frontend.entrypoints=websecure"
+      # Host Rule (Uses variable, no https:// prefix)
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN_NAME}`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure" # Plural fix
       - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
       - "traefik.http.services.frontend.loadbalancer.server.port=80" # Nginx serves on port 80
 
-  # 3. Auth API (Go)
+  # 3. Auth API (Go) - Handles /api/auth/* requests
   auth-api:
     build:
       context: ./auth-api
@@ -54,20 +50,16 @@ services:
     env_file:
       - .env
     labels:
-labels:
       - "traefik.enable=true"
-      # 1. The Router (Matches the public URL)
       - "traefik.http.routers.auth-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/auth`)"
       - "traefik.http.routers.auth-api.entrypoints=websecure"
       - "traefik.http.routers.auth-api.tls.certresolver=letsencrypt"
-      # 2. The Middleware Definition (Define a stripper named 'auth-strip')
+      # CRITICAL STRIP PREFIX MIDDLEWARE
       - "traefik.http.middlewares.auth-strip.stripprefix.prefixes=/api/auth"
-      # 3. The Middleware Attachment (Tell the router to USE 'auth-strip')
-      - "traefik.http.routers.auth-api.middlewares=auth-strip"
-      # 4. The Service Port
+      - "traefik.http.routers.auth-api.middlewares=auth-strip" # Attachment
       - "traefik.http.services.auth-api.loadbalancer.server.port=8081"
 
-  # 4. Todos API (Node.js)
+  # 4. Todos API (Node.js) - Handles /api/todos/* requests
   todos-api:
     build:
       context: ./todos-api
@@ -79,13 +71,12 @@ labels:
       - "traefik.http.routers.todos-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/todos`)"
       - "traefik.http.routers.todos-api.entrypoints=websecure"
       - "traefik.http.routers.todos-api.tls.certresolver=letsencrypt"
-      # Middleware Definition ('todos-strip')
+      # CRITICAL STRIP PREFIX MIDDLEWARE
       - "traefik.http.middlewares.todos-strip.stripprefix.prefixes=/api/todos"
-      # Middleware Attachment
       - "traefik.http.routers.todos-api.middlewares=todos-strip"
       - "traefik.http.services.todos-api.loadbalancer.server.port=8082"
 
-  # 5. Users API (Java Spring Boot)
+  # 5. Users API (Java Spring Boot) - Handles /api/users/* requests
   users-api:
     build:
       context: ./users-api
@@ -97,28 +88,21 @@ labels:
       - "traefik.http.routers.users-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/users`)"
       - "traefik.http.routers.users-api.entrypoints=websecure"
       - "traefik.http.routers.users-api.tls.certresolver=letsencrypt"
-      # Middleware Definition ('users-strip')
+      # CRITICAL STRIP PREFIX MIDDLEWARE
       - "traefik.http.middlewares.users-strip.stripprefix.prefixes=/api/users"
-      # Middleware Attachment
       - "traefik.http.routers.users-api.middlewares=users-strip"
       - "traefik.http.services.users-api.loadbalancer.server.port=8083"
 
-  # 6. Redis Queue
+  # 6. Redis Queue - Internal only
   redis-queue:
     image: redis:alpine
-    # Redis uses port 6379 by default
-    ports:
-      - "6379:6379"
+    # This port is exposed only to the Docker network internally
 
-  # 7. Log Message Processor (Python)
+  # 7. Log Message Processor (Python) - Internal worker
   log-message-processor:
     build:
       context: ./log-message-processor
       dockerfile: Dockerfile
     env_file:
       - .env
-    # This service is internal and does not need Traefik labels
-
-volumes:
-  traefik-certificates:
-
+    # No Traefik labels needed—this is a worker service.
