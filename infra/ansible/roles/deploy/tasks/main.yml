@@ -1,0 +1,32 @@
+---
+- name: Define app directory
+  set_fact:
+    app_dir: "/opt/todo-app"
+
+- name: Clone application repository
+  git:
+    repo: "https://github.com/Mukky001/DevOps-Stage-6.git" # <--- UPDATE THIS
+    dest: "{{ app_dir }}"
+    version: main
+    force: yes
+
+- name: Copy .env file from Control Node to Remote Server
+  copy:
+    # This means: Go up one level from 'infra/ansible/' to 'infra/', then up to root, then find .env
+    src: "{{ playbook_dir }}/../../.env" 
+    dest: "{{ app_dir }}/.env"
+    mode: '0644'
+
+- name: List files in app directory (Debug)
+  command: ls -R {{ app_dir }}
+  register: files_out
+
+- name: Print file list
+  debug:
+    var: files_out.stdout_lines
+
+- name: Start Application Stack
+  command: docker compose -f docker-compose.yml up -d --build
+  args:
+    chdir: "{{ app_dir }}"
+  # Using 'command' is safer than the docker_compose module if python-docker isn't installed on the remote host

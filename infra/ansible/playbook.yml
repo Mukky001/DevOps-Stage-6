@@ -1,0 +1,8 @@
+---
+- name: Configure Server and Deploy TODO Application
+  hosts: app_servers
+  become: yes
+
+  roles:
+    - dependencies
+    - deploy
