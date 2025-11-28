@@ -40,7 +40,7 @@ services:
     labels:
       - "traefik.enable=true"
       # Rule 1: Match traffic for the root domain (https://your-domain.com)
-      - "traefik.http.routers.frontend.rule=Host(`your-domain.com`)" # CHANGE THIS
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN_NAME}`)" # CHANGE THIS
       - "traefik.http.routers.frontend.entrypoint=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
       - "traefik.http.services.frontend.loadbalancer.server.port=80" # Nginx serves on port 80
@@ -55,7 +55,7 @@ services:
     labels:
       - "traefik.enable=true"
       # Rule 2: Match traffic for /api/auth path
-      - "traefik.http.routers.auth-api.rule=Host(`your-domain.com`) && PathPrefix(`/api/auth`)" # CHANGE THIS
+      - "traefik.http.routers.auth-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/auth`)" # CHANGE THIS
       - "traefik.http.routers.auth-api.entrypoint=websecure"
       - "traefik.http.routers.auth-api.tls.certresolver=letsencrypt"
       - "traefik.http.services.auth-api.loadbalancer.server.port=8081"
@@ -70,7 +70,7 @@ services:
     labels:
       - "traefik.enable=true"
       # Rule 3: Match traffic for /api/todos path
-      - "traefik.http.routers.todos-api.rule=Host(`your-domain.com`) && PathPrefix(`/api/todos`)" # CHANGE THIS
+      - "traefik.http.routers.todos-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/todos`)" # CHANGE THIS
       - "traefik.http.routers.todos-api.entrypoint=websecure"
       - "traefik.http.routers.todos-api.tls.certresolver=letsencrypt"
       - "traefik.http.services.todos-api.loadbalancer.server.port=8082"
@@ -85,7 +85,7 @@ services:
     labels:
       - "traefik.enable=true"
       # Rule 4: Match traffic for /api/users path
-      - "traefik.http.routers.users-api.rule=Host(`your-domain.com`) && PathPrefix(`/api/users`)" # CHANGE THIS
+      - "traefik.http.routers.users-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/users`)" # CHANGE THIS
       - "traefik.http.routers.users-api.tls.certresolver=letsencrypt"
       - "traefik.http.routers.users-api.entrypoint=websecure"
       - "traefik.http.services.users-api.loadbalancer.server.port=8083"
@@ -108,3 +108,4 @@ services:
 
 volumes:
   traefik-certificates:
+
