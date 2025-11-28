@@ -35,3 +35,33 @@
     name: docker
     state: started
     enabled: yes
+# ... existing tasks ...
+
+- name: Check if swap file exists
+  stat:
+    path: /swapfile
+  register: swap_file
+
+- name: Create 2GB swap file (if it doesn't exist)
+  command: fallocate -l 2G /swapfile
+  when: not swap_file.stat.exists
+
+- name: Set permissions on swap file
+  file:
+    path: /swapfile
+    mode: '0600'
+  when: not swap_file.stat.exists
+
+- name: Format swap file
+  command: mkswap /swapfile
+  when: not swap_file.stat.exists
+
+- name: Enable swap file
+  command: swapon /swapfile
+  when: not swap_file.stat.exists
+
+- name: Add swap to /etc/fstab to persist after reboot
+  lineinfile:
+    path: /etc/fstab
+    line: '/swapfile none swap sw 0 0'
+    state: present
