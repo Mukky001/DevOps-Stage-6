@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # 1. Traefik Reverse Proxy & SSL Manager
   traefik:
-    image: traefik:v2.10
+    image: traefik:v2.11
     container_name: traefik
     command:
       # Entry points for HTTP (80) and HTTPS (443)
