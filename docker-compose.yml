@@ -60,6 +60,10 @@ services:
       - "traefik.http.routers.auth-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/auth`)" # CHANGE THIS
       - "traefik.http.routers.auth-api.entrypoints=websecure"
       - "traefik.http.routers.auth-api.tls.certresolver=letsencrypt"
+# 2. Define the Middleware (Strip the prefix)
+      - "traefik.http.middlewares.auth-strip.stripprefix.prefixes=/api/auth"
+# 3. Attach the Middleware to the Router (Crucial!)
+      - "traefik.http.routers.auth-api.middlewares=auth-strip"
       - "traefik.http.services.auth-api.loadbalancer.server.port=8081"
 
   # 4. Todos API (Node.js)
@@ -75,6 +79,9 @@ services:
       - "traefik.http.routers.todos-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/todos`)" # CHANGE THIS
       - "traefik.http.routers.todos-api.entrypoints=websecure"
       - "traefik.http.routers.todos-api.tls.certresolver=letsencrypt"
+# Middleware to strip /api/todos
+      - "traefik.http.middlewares.todos-strip.stripprefix.prefixes=/api/todos"
+      - "traefik.http.routers.todos-api.middlewares=todos-strip"
       - "traefik.http.services.todos-api.loadbalancer.server.port=8082"
 
   # 5. Users API (Java Spring Boot)
@@ -86,12 +93,13 @@ services:
       - .env
     labels:
       - "traefik.enable=true"
-      # Rule 4: Match traffic for /api/users path
-      - "traefik.http.routers.users-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/users`)" # CHANGE THIS
-      - "traefik.http.routers.users-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.users-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/users`)"
       - "traefik.http.routers.users-api.entrypoints=websecure"
+      - "traefik.http.routers.users-api.tls.certresolver=letsencrypt"
+  # Middleware to strip /api/users
+      - "traefik.http.middlewares.users-strip.stripprefix.prefixes=/api/users"
+      - "traefik.http.routers.users-api.middlewares=users-strip"
       - "traefik.http.services.users-api.loadbalancer.server.port=8083"
-
   # 6. Redis Queue
   redis-queue:
     image: redis:alpine
