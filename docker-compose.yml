@@ -18,10 +18,11 @@ services:
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
       # ACME configuration for SSL certificates (Let's Encrypt Staging for testing)
+      - --certificatesresolvers.letsencrypt.acme.tlsChallenge=true
       - --certificatesresolvers.letsencrypt.acme.email=muktarakinola.devops@gmail.com # CHANGE THIS
       - --certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json
-      - --certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory # REMOVE FOR PROD
-    ports:
+      #- --certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory # REMOVE FOR PROD
+   ports:
       - "80:80"     # The Web entrypoint (redirects to 443)
       - "443:443"   # The WebSecure entrypoint
       #- "8080:8080" # Traefik Dashboard (optional)
