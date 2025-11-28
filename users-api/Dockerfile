@@ -1,6 +1,6 @@
 # STAGE 1: Build the application using a valid Maven image
 # UPDATED: Changed from the invalid 3.8.7 tag to a standard 3.9 tag
-FROM maven:3.8.7-openjdk-8 as build
+FROM maven:3.9-eclipse-temurin-8 as build
 WORKDIR /app
 # Copy the project configuration
 COPY pom.xml .
