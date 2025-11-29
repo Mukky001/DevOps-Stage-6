@@ -35,7 +35,7 @@
     name: docker
     state: started
     enabled: yes
-# ... existing tasks ...
+
 
 - name: Check if swap file exists
   stat:

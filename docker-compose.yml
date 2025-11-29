@@ -20,7 +20,6 @@ services:
       - --certificatesresolvers.letsencrypt.acme.tlsChallenge=true # CRITICAL: ACME challenge type
       - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
       - --certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json
-      # Staging caserver line is omitted/commented out here for production
 
     ports:
       - "80:80"
@@ -51,7 +50,6 @@ services:
       - .env
     labels:
       - "traefik.enable=true"
-      #- "traefik.http.routers.auth-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/auth`)"
       - "traefik.http.routers.auth-api.rule=Host(`${DOMAIN_NAME}`) && (PathPrefix(`/api/auth`) || Path(`/login`))"
       - "traefik.http.routers.auth-api.entrypoints=websecure"
       - "traefik.http.routers.auth-api.tls.certresolver=letsencrypt"
@@ -113,5 +111,5 @@ services:
       - .env
     # No Traefik labels needed
 
-volumes: # <--- CRITICAL: THIS MUST BE FLUSH LEFT (NO SPACES)
+volumes:
   traefik-certificates:

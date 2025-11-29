@@ -29,16 +29,8 @@
   command: docker compose build --no-cache frontend
   args:
     chdir: "{{ app_dir }}"
-  # We will remove this task after it runs successfully once.
 
 - name: Start Application Stack
   command: docker compose up -d
   args:
     chdir: "{{ app_dir }}"
-  # Note: Removed --build here so it uses the clean image we just created above
-
-#- name: Start Application Stack
-#  command: docker compose -f docker-compose.yml up -d --build
-#  args:
-#    chdir: "{{ app_dir }}"
-  # Using 'command' is safer than the docker_compose module if python-docker isn't installed on the remote host
