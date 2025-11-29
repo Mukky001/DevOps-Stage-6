@@ -6,9 +6,10 @@ services:
     image: traefik:v2.11 # Fixes Docker API version compatibility
     container_name: traefik
     command:
-      #- --entrypoints.web.address=:80
-      - --entrypoints.websecure.forwardauth.address=https://freewebuniverse.chickenkiller.com/api/auth
+      - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --api.dashboard=true
@@ -20,8 +21,7 @@ services:
       - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
       - --certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json
       # Staging caserver line is omitted/commented out here for production
-      - --middlewares.login-redirect.redirectregex.regex=^https://(.*)/login$
-      - --middlewares.login-redirect.redirectregex.replacement=https://$${1}/api/auth/login
+
     ports:
       - "80:80"
       - "443:443"
@@ -42,7 +42,6 @@ services:
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
-      - "traefik.http.routers.frontend.middlewares=login-redirect@docker"
   # 3. Auth API (Go) - Handles /api/auth/* requests
   auth-api:
     build:
