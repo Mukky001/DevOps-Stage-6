@@ -1,150 +1,99 @@
-🚀 DevOps Stage 6: Microservices Containerisation & Deployment
-This repository contains the source code and infrastructure automation for deploying a polyglot microservices TODO application. The system is fully containerised using Docker, orchestrated via Docker Compose, provisioned on AWS using Terraform, and configured using Ansible.
 
-🏗 Architecture
-The application consists of 5 microservices behind a Traefik Reverse Proxy:
+-----
 
-Traefik: Edge router, Load Balancer, and automatic SSL termination (Let's Encrypt).
+## 📄 `README.md` 
 
-Frontend: Vue.js application serving the UI.
+````markdown
+# DevOps Stage 6: Fully Automated Microservices Deployment (Polyglot Stack) 🚀
 
-Auth API: Go-based authentication service.
+This repository contains the complete solution for deploying a microservices-based **Todo Application** using Infrastructure as Code (IaC) principles. The goal was to eliminate manual steps, ensure environment consistency, and secure all endpoints with HTTPS.
 
-Todos API: Node.js service for managing todo items.
+## 🌟 Introduction
 
-Users API: Java Spring Boot service for user management.
+This project solves the complex challenge of taking disparate application components—written in **Java, Go, Node.js, and Python**—and deploying them reliably and securely onto a production-ready AWS environment using a single, automated command.
 
-Log Processor: Python service (legacy compatible) for processing logs.
+The success of this deployment rests on the seamless integration of Docker, Ansible, Terraform, and Traefik, proving proficiency in modern CI/CD practices and multi-language application management.
 
-Redis: Message queue for inter-service communication.
+---
 
-Infrastructure Stack:
+## 🛠️ The Technology Stack (The "How It Works")
 
-Cloud: AWS (EC2)
+The solution is built upon a layered stack of industry-standard DevOps tools:
 
-IaC: Terraform (State managed in S3)
+| Tool | Purpose in this Project | The "Big Picture" Role |
+| :--- | :--- | :--- |
+| **Docker / Docker Compose** | **Containerisation** | Isolates each microservice (Java/Go/Python) with its specific environment and dependencies, solving the "works on my machine" problem. |
+| **Terraform (IaC)** | **Infrastructure Provisioning** | Manages the AWS EC2 server and Security Groups as code. **Enables single-command deployment** by triggering Ansible automatically. |
+| **Ansible** | **Configuration Management** | Ensures the server is production-ready by installing Docker, Git, and creating essential **Swap Memory** to prevent memory crashes on small VMs. |
+| **Traefik** | **API Gateway / Edge Routing** | Routes all public traffic (HTTPS/Port 443) to the correct internal container and **automates the SSL certificate generation** (Let's Encrypt). |
+| **AWS EC2** | **Compute** | Provides the underlying virtual server hosting the Docker containers. |
 
-Configuration: Ansible
+---
 
-Container Runtime: Docker & Docker Compose V2
+## 🗺️ Architecture and Data Flow
 
-🛠️ Prerequisites
-Before you begin, ensure you have the following installed locally:
+The application features a secure, layered architecture where **Traefik acts as the single point of entry** for all public requests.
 
-Terraform (v1.0+)
+1.  **Incoming Request (HTTPS):** The user connects to the public domain (`freewebuniverse.chickenkiller.com`) via HTTPS.
+2.  **Traefik Routing:** Traefik receives the request and examines the URL Path:
+    * Requests to `/` are sent to the **Frontend** (Vue.js).
+    * Requests to `/api/auth/login` are matched by the Traefik router, which uses the **StripPrefix Middleware** to remove the `/api/auth` prefix before forwarding the request to the Go Auth API container. This ensures the Go code receives the clean `/login` path it expects.
+3.  **Service Interaction:** The APIs communicate internally via the Redis queue for processing logs and asynchronous tasks.
+4.  **Java Compatibility Fix:** The **Users API** (Java) runs successfully only because its Docker container is pinned to a specific compatible runtime (JDK 8), overcoming fundamental application stability issues.
 
-Ansible (v2.9+)
+---
 
-AWS CLI (Configured with aws configure)
+## ⚙️ Quick Start Guide (Replication)
 
-Git
+This guide shows how to replicate the entire automated deployment on your own AWS account using a **single Terraform command**.
 
-You also need:
+### 1. Prerequisites Checklist
 
-A valid Domain Name (e.g., example.com).
+* [ ] AWS Access Key ID and Secret Access Key configured via `aws configure`.
+* [ ] SSH Key Pair created in AWS (e.g., `DevopsKey`).
+* [ ] A dedicated S3 Bucket created for Terraform state (e.g., `my-project-state-bucket`).
+* [ ] Terraform and Ansible installed on your local control machine.
 
-An AWS Account with permissions to create EC2 instances and S3 buckets.
+### 2. Configure Local Files
 
-📂 Repository Structure
-Bash
+a. **Create `.env`:** Copy the template and fill in your details. **DO NOT PUSH THIS FILE TO GIT.**
 
-.
-├── auth-api/             # Go Service
-├── frontend/             # Vue.js Service
-├── log-message-processor/# Python Service
-├── todos-api/            # Node.js Service
-├── users-api/            # Java Service
-├── infra/
-│   ├── ansible/
-│   │   ├── roles/        # Configuration roles (dependencies, deploy)
-│   │   └── playbook.yml  # Main Ansible entry point
-│   └── terraform/
-│       ├── main.tf       # Infrastructure definition
-│       ├── variables.tf  # Configurable settings (Region, Instance Type)
-│       └── backend.tf    # Remote State configuration
-├── docker-compose.yml    # Container orchestration
-└── .env.example          # Template for environment variables
-⚙️ Configuration
-1. Environment Variables
-Copy the template to a real environment file:
-
-Bash
-
+```bash
 cp .env.example .env
-Open .env and update the following critical values:
+````
 
-Ini, TOML
+**(Note: Ensure DOMAIN\_NAME has NO http/https prefix.)**
 
-# Domain Configuration
-DOMAIN_NAME=your-domain.com  # <--- YOUR ACTUAL DOMAIN
-ACME_EMAIL=your-email@example.com
+b. **Update Terraform Backend:** Navigate to `infra/terraform/backend.tf` and replace the placeholder bucket name with your actual S3 bucket name.
 
-# Security
-JWT_SECRET=generated_random_secure_string
-2. Terraform Backend
-Navigate to infra/terraform/backend.tf and update the S3 bucket name to one you have created in your AWS account:
+### 3\. Deploy the Infrastructure (The Single Command)
 
-Terraform
+Run these commands from the `infra/terraform/` directory:
 
-bucket = "your-unique-state-bucket-name"
-🚀 Deployment Guide
-Step 1: Provision Infrastructure
-We use Terraform to launch the server. This process creates a security group allowing HTTP/HTTPS/SSH, provisions a t3.micro instance, and automatically triggers Ansible.
-
-Bash
-
-cd infra/terraform
+```bash
+# 1. Initialize Terraform (Connects to S3 Backend)
 terraform init
+
+# 2. Launch Server, Configure, and Deploy Application (The Automation Chain)
+# This creates EC2, installs Docker, and runs Ansible deploy role.
 terraform apply -auto-approve
-What happens automatically:
+```
 
-Server is created with 20GB storage.
+### 4\. Verification
 
-Terraform generates an inventory file for Ansible.
+1.  **Update DNS:** Copy the **`server_public_ip`** output from Terraform and update the A-Record for your domain.
+2.  **Check Site:** Visit `https://your-domain.com`.
+3.  **Login Test:** Use the default credentials (e.g., `admin`/`Admin123`) to verify Auth API functionality.
 
-Ansible installs Docker, Git, and sets up Swap memory (to handle Java builds).
+-----
 
-Ansible clones this repo to the server and starts the containers.
+## 🔒 Security & Idempotency
 
-Step 2: Update DNS
-Once Terraform finishes, it will output the Server Public IP.
+  * **Security:** All HTTP traffic is redirected to HTTPS (Port 443) via Traefik. The Ansible deploy task uses SSH keys (`~/.ssh/DevopsKey.pem`) and disables host key checking for non-interactive automation. Secrets are isolated in the `.env` file.
+  * **Idempotency:** The deployment is fully idempotent. Rerunning the `terraform apply -auto-approve` command will check the current state against the desired state and **only execute commands if necessary**, preventing unnecessary rebuilds or server restarts.
 
-Copy the IP address.
+<!-- end list -->
 
-Go to your DNS Provider.
+```
 
-Update your A Record (@ or subdomain) to point to this new IP.
-
-Step 3: Access the Application
-Wait 1-2 minutes for DNS propagation and SSL certificate generation. Visit: https://your-domain.com
-
-🔧 Manual Operations (Debugging)
-If the automatic deployment fails (e.g., due to SSH timeouts), you can re-run the configuration layer without destroying the server:
-
-Bash
-
-# From infra/terraform/ directory
-ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ../ansible/inventory ../ansible/playbook.yml
-Accessing the Server
-To debug containers or view logs:
-
-Bash
-
-ssh -i ~/.ssh/DevopsKey.pem ubuntu@<SERVER_IP>
-Bash
-
-# View running services
-sudo docker ps
-
-# View logs
-sudo docker logs traefik
-sudo docker logs todo-app-users-api-1
-🐛 Known Issues & Fixes
-Java OOM (Out of Memory): The Java build is heavy. The Ansible script automatically creates a 2GB Swap file to prevent the server from freezing on t3.micro instances.
-
-Python Build Failure: The log-message-processor uses a legacy library (thriftpy). The Dockerfile is pinned to python:3.6-slim-buster to ensure compatibility with older C-extensions.
-
-404 Not Found: If the page loads 404, ensure your DOMAIN_NAME in .env matches your actual URL exactly. Traefik routes based on the Host header.
-
-🤝 Credits
-Project completed as part of the DevOps Internship Stage 6.
+```
